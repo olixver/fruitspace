@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>fruit plate.</title>
+<meta name="description" content="Arrange a fruit plate. A real live artist paints it for you.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --ground:#FCEFF3;
+    --board:#F9ECF0;
+    --line:#D6CACD;
+    --plate:#FFFFFF;
+    --ink:#121112;
+    --muted:#4a4447;
+    --chip-line:#D6CACD;
+    --held-bg:#FEF6F4;
+    --held-line:#D9775F;
+    --held-ink:#8A3A2A;
+    --pay:#635BFF;
+    --dim:rgba(70,60,64,.55);
+    --display:"Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+    --body:"Inter", "Helvetica Neue", Arial, sans-serif;
+    color-scheme:light;
+  }
+  [hidden]{display:none!important}
+  html,body{height:100%}
+  body{background:var(--ground);color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  button{font:inherit;color:inherit;cursor:pointer}
+  button:focus-visible,a:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--pay);outline-offset:2px}
+
+  #app{padding-inline:clamp(16px,4vw,50px);padding-block:0 28px}
+  header{padding-block:22px 16px}
+  .logo{margin:0;font-family:var(--display);font-weight:800;font-variation-settings:"opsz" 96;font-size:calc(clamp(52px,8.6vw,112px) * var(--k,1));letter-spacing:-.07em;line-height:.9;padding-bottom:.1em}
+
+  /* board */
+  #board{position:relative;background:var(--board);border:1px solid var(--line);overflow:hidden;touch-action:none;--fs:28px}
+  #hint{position:absolute;left:16px;top:14px;margin:0;font-size:calc(12px * var(--k,1));letter-spacing:.02em;color:var(--muted);z-index:2}
+  .pill{background:#fff;border:1px solid var(--chip-line);border-radius:999px}
+  #more{position:absolute;z-index:3;padding:.32em .8em;font-family:var(--body);font-weight:600;font-size:calc(17px * var(--k,1));background:#fff;border:1px solid var(--line);border-radius:999px;white-space:nowrap}
+  #more:disabled{background:#E9DFE3;color:#8a8286;border-color:transparent;cursor:default}
+  #plate{position:absolute;border-radius:50%;background:var(--plate);border:1px solid var(--line);z-index:1}
+
+  .fruit{position:absolute;left:0;top:0;background:#fff;border:1px solid var(--chip-line);padding:.06em .26em .14em;font-family:var(--body);font-weight:700;font-size:var(--fs);line-height:1;letter-spacing:-.03em;white-space:nowrap;transform:rotate(var(--r));cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none;transition:box-shadow .12s}
+  .fruit.dragging{cursor:grabbing;transform:rotate(var(--r)) scale(1.04);box-shadow:0 10px 24px rgba(80,40,55,.18);z-index:6000!important}
+  body.locked .fruit{pointer-events:none}
+
+  #basketWrap{position:absolute;right:18px;bottom:14px;z-index:40;display:flex;flex-direction:column;align-items:center;scale:var(--k,1);transform-origin:bottom right}
+  .off{font-size:calc(12px * var(--k2,1));font-weight:600;padding:.25em .8em;background:#fff;border:1px solid var(--line);border-radius:999px;position:relative;z-index:2;white-space:nowrap}
+  #basket{background:none;border:0;font-size:52px;line-height:1;padding:0;margin-top:-6px;transition:transform .12s}
+  #basket.hot{transform:scale(1.18) rotate(-4deg)}
+
+  #held{position:absolute;right:18px;z-index:5000;width:min(300px,calc(100% - 36px));background:var(--held-bg);border:1.5px solid var(--held-line);border-radius:18px;padding:10px 12px 12px;color:var(--held-ink)}
+  .held-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .held-head span{font-weight:600;font-size:calc(12px * var(--k,1))}
+  #heldClose{font-size:11px;padding:.25em .8em;background:transparent;border:1px solid var(--held-line);border-radius:999px;color:var(--held-ink)}
+  #heldList{display:flex;flex-wrap:wrap;gap:6px}
+  .held-pill{font-size:12px;padding:.4em .9em;min-width:7em;text-align:left;background:#fff;border:1px solid var(--held-line);border-radius:999px;color:var(--held-ink);cursor:grab;touch-action:none;user-select:none}
+  .held-empty{margin:0;font-size:12px;opacity:.7}
+
+  #full{position:absolute;z-index:45;background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:calc(12px * var(--k,1));line-height:1.35;white-space:pre-line;right:112px;bottom:22px;max-width:calc(100% - 140px)}
+  #full.shake{animation:shake .35s}
+  @keyframes shake{25%{translate:-5px 0}75%{translate:5px 0}}
+
+  .controls{display:flex;align-items:center;gap:16px;margin-top:14px}
+  #submit{background:var(--ink);color:#fff;border:0;border-radius:999px;padding:.6em 1.15em;font-weight:600;font-size:calc(14px * var(--k,1))}
+  #help{width:26px;height:26px;border-radius:50%;background:#fff;border:1px solid var(--line);font-size:11px;margin-left:clamp(0px,6vw,64px)}
+  #restart{margin-left:auto;background:#fff;border:1px solid var(--line);border-radius:999px;padding:.6em 1.1em;font-weight:600;font-size:calc(14px * var(--k,1))}
+
+  /* overlays */
+  .screen{position:fixed;inset:0;display:grid;place-items:center;padding:16px;z-index:7000}
+  #intro{background:var(--ground);z-index:8000}
+  .intro-pill{font-family:var(--display);font-weight:800;font-variation-settings:"opsz" 96;font-size:calc(clamp(44px,9vw,104px) * var(--k,1));letter-spacing:-.07em;line-height:1;padding:.3em .55em .4em;background:#FFF8FB;border:1px solid var(--line);border-radius:999px;white-space:nowrap;animation:pulse 1s ease-in-out infinite}
+  @keyframes pulse{
+    0%,100%{transform:scale(1)}
+    50%{transform:scale(1.12)}
+  }
+  #instructions{background:var(--ground)}
+  .instr-card{position:relative;width:min(560px,100%);border:1px solid var(--line);padding:clamp(24px,5vw,40px) clamp(20px,4vw,34px) 38px;display:flex;flex-direction:column;gap:14px}
+  .instr-title{margin:0 0 6px;text-align:center;font-family:var(--body);font-weight:700;font-size:calc(clamp(22px,4.4vw,31px) * var(--k,1));letter-spacing:-.01em;text-transform:uppercase;text-wrap:balance}
+  .instr-line{margin:0;font-size:calc(clamp(15px,2.6vw,18px) * var(--k,1));line-height:1.4;font-weight:500}
+  .instr-line .pill{display:inline-block;padding:0 .55em;margin-inline:.2em;font-weight:500}
+  #arrange{align-self:center;margin-top:8px;background:#FFF8FB;border:1px solid var(--line);border-radius:999px;padding:.55em 1.6em;font-family:var(--body);font-weight:700;font-size:calc(clamp(17px,3.2vw,24px) * var(--k,1));text-transform:uppercase}
+  #instrClose{position:absolute;right:-14px;top:-14px;width:30px;height:30px;border-radius:50%;background:var(--ground);border:1px solid var(--line);font-size:15px;line-height:1}
+
+  #checkout{background:var(--dim)}
+  .co-card{background:#fff;border:1.5px solid var(--ink);border-radius:26px;padding:22px 20px 20px;width:min(380px,100%);max-height:calc(100dvh - 32px);overflow:auto;box-sizing:border-box;display:flex;flex-direction:column;gap:14px}
+  .co-head{margin:0;font-family:var(--display);font-weight:800;font-size:calc(24px * var(--k,1));line-height:1.02;letter-spacing:-.035em;text-wrap:balance}
+  .co-price{margin:0;font-size:calc(12px * var(--k,1));font-weight:500}
+  #coPay{display:block;text-align:center;text-decoration:none;background:var(--pay);color:#fff;border-radius:999px;padding:.8em 1em;font-weight:700;font-size:calc(12px * var(--k,1))}
+  #coBack{background:none;border:0;font-size:calc(12px * var(--k,1));color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+  .co-preview{position:relative;width:100%;aspect-ratio:10/9;background:var(--board);border:1px solid var(--line);border-radius:14px;overflow:hidden;flex:none}
+  .pv-plate{position:absolute;border-radius:50%;background:var(--plate);border:1px solid var(--line)}
+  .fruit.pv-fruit{transform:translate(-50%,-50%) rotate(var(--r));cursor:default;pointer-events:none;transition:none}
+  #coNote{margin:-6px 0 0;font-size:11px;color:var(--muted);text-align:center}
+
+  /* edit mode */
+  #pencil{position:fixed;right:10px;top:50%;width:34px;height:34px;border-radius:50%;background:#3b3638;color:#fff;border:0;z-index:9000;display:grid;place-items:center}
+  body.editing [data-edit]{cursor:pointer!important}
+  body.editing [data-edit]:hover{outline:1px dashed var(--pay);outline-offset:3px}
+  .ed-sel{outline:2px solid var(--pay)!important;outline-offset:3px}
+  #editor{position:fixed;right:12px;top:12px;bottom:12px;width:290px;z-index:9500;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 50px rgba(60,30,45,.18);display:flex;flex-direction:column;font-size:12px;color:var(--ink)}
+  .ed-top{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .ed-top strong{font-family:var(--display);font-size:15px}
+  .ed-body{overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:14px}
+  .ed-sec{display:flex;flex-direction:column;gap:8px}
+  .ed-sec h3{margin:0;font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+  .ed-row{display:grid;grid-template-columns:56px 1fr;gap:8px;align-items:center}
+  .ed-row label{color:var(--muted)}
+  #editor textarea,#editor input[type=number],#editor input[type=text]{width:100%;box-sizing:border-box;font:12px/1.4 var(--body);border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff;color:var(--ink)}
+  #editor textarea{resize:vertical;min-height:52px}
+  .ed-screens{display:flex;flex-wrap:wrap;gap:6px}
+  .ed-btn{background:#fff;border:1px solid var(--line);border-radius:999px;padding:.35em .8em;font-size:11px}
+  .ed-btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .ed-hint{margin:0;color:var(--muted);line-height:1.4}
+  .ed-num{display:flex;gap:6px;align-items:center}
+  .ed-num input[type=range]{flex:1}
+  .ed-num input[type=number]{width:62px!important}
+  #edOut{min-height:90px;font-family:ui-monospace,Menlo,monospace!important;font-size:10px!important}
+  @media (max-width:640px){
+    #editor{left:8px;right:8px;top:auto;bottom:8px;width:auto;height:52vh}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .intro-pill{animation:none}
+    .fruit,#basket{transition:none}
+    #full.shake{animation:none}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header><h1 class="logo" data-edit="logo">fruit plate.</h1></header>
+
+  <section id="board" aria-label="Your fruit plate">
+    <p id="hint" data-edit="hint">describe a fruit plate. drag to arrange the plate.</p>
+    <button id="more" data-edit="more">more fruit</button>
+    <div id="plate" data-edit="plate" data-kind="box"></div>
+
+    <div id="full" data-edit="full" hidden>your plate is full
+drag some fruit off to make room →</div>
+
+    <div id="held" hidden>
+      <div class="held-head"><span data-edit="heldLabel">held fruits</span><button id="heldClose" type="button">close</button></div>
+      <div id="heldList"></div>
+      <p class="held-empty" id="heldEmpty">nothing held yet</p>
+    </div>
+
+    <div id="basketWrap" data-edit="basket" data-kind="box">
+      <span class="off" data-edit="off">off the plate</span>
+      <button id="basket" type="button" aria-label="Basket, tap to see held fruits">🧺</button>
+    </div>
+  </section>
+
+  <div class="controls">
+    <button id="submit" data-edit="submit">submit</button>
+    <button id="help" aria-label="Show instructions">?</button>
+    <button id="restart" data-edit="restart">start over</button>
+  </div>
+</div>
+
+<div id="intro" class="screen" hidden>
+  <div class="intro-pill" data-edit="introLogo">fruit plate.</div>
+</div>
+
+<div id="instructions" class="screen" hidden role="dialog" aria-label="Instructions">
+  <div class="instr-card">
+    <button id="instrClose" aria-label="Close instructions">✕</button>
+    <h2 class="instr-title" data-edit="instrTitle">Fruit plate instructions</h2>
+    <p class="instr-line" data-edit="instr1" data-tokens>Drag fruit words around your plate and arrange them.</p>
+    <p class="instr-line" data-edit="instr2" data-tokens>Add more with the [more fruit] button.</p>
+    <p class="instr-line" data-edit="instr3" data-tokens>Drag one to the basket [basket] to remove it. Tap the basket to bring it back.</p>
+    <p class="instr-line" data-edit="instr4" data-tokens>Hit submit &amp; I’ll paint the fruits, not the words.</p>
+    <button id="arrange" data-edit="arrange">Arrange my fruits</button>
+  </div>
+</div>
+
+<div id="checkout" class="screen" hidden role="dialog" aria-label="Order a painting">
+  <div class="co-card">
+    <h2 class="co-head" data-edit="coHead">Would you like a real live artist to paint these fruits and send it to you?</h2>
+    <div id="coPreview" class="co-preview" aria-label="Preview of your plate"></div>
+    <p class="co-price" data-edit="coPrice">$20 / one-of-one fruit plate</p>
+    <a id="coPay" href="#" target="_blank" rel="noopener" data-edit="coPay">yes, paint my plate</a>
+    <p id="coNote" hidden>payment link isn’t connected yet</p>
+    <button id="coBack" data-edit="coBack">not yet, keep arranging</button>
+  </div>
+</div>
+
+<button id="pencil" aria-label="Edit the page" title="Edit the page">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+</button>
+
+<aside id="editor" hidden aria-label="Edit panel">
+  <div class="ed-top"><strong>edit mode</strong><button class="ed-btn primary" id="edDone">done</button></div>
+  <div class="ed-body">
+    <div class="ed-sec">
+      <h3>Show screen</h3>
+      <div class="ed-screens">
+        <button class="ed-btn" data-screen="intro">logo intro</button>
+        <button class="ed-btn" data-screen="instructions">instructions</button>
+        <button class="ed-btn" data-screen="main">plate</button>
+        <button class="ed-btn" data-screen="checkout">checkout</button>
+      </div>
+    </div>
+
+    <div class="ed-sec" id="edSel">
+      <h3>Selected</h3>
+      <p class="ed-hint" id="edNone">Click any text or object on the page to edit it.</p>
+      <div id="edFields" hidden style="display:flex;flex-direction:column;gap:8px">
+        <div class="ed-row"><label>element</label><strong id="edName"></strong></div>
+        <div class="ed-row" id="edTextRow"><label for="edText">text</label><textarea id="edText" rows="3"></textarea></div>
+        <div class="ed-row"><label for="edSize">size %</label><div class="ed-num"><input type="range" id="edSizeR" min="30" max="250" step="1"><input type="number" id="edSize" min="10" max="400"></div></div>
+        <div class="ed-row"><label for="edX">move x</label><div class="ed-num"><input type="range" id="edXR" min="-300" max="300" step="1"><input type="number" id="edX"></div></div>
+        <div class="ed-row"><label for="edY">move y</label><div class="ed-num"><input type="range" id="edYR" min="-300" max="300" step="1"><input type="number" id="edY"></div></div>
+        <p class="ed-hint" id="edTokHint" hidden>Type [more fruit] or [basket] to drop in the little pill or basket.</p>
+        <div><button class="ed-btn" id="edReset">reset this element</button></div>
+      </div>
+    </div>
+
+    <div class="ed-sec">
+      <h3>Fruit</h3>
+      <div class="ed-row"><label for="edFruits">list</label><textarea id="edFruits" rows="6"></textarea></div>
+      <p class="ed-hint">One per line or comma separated. The plate restarts when you click out of the box.</p>
+      <div class="ed-row"><label for="edCap">plate cap</label><input type="number" id="edCap" min="1" max="40"></div>
+      <div class="ed-row"><label for="edFs">word size %</label><input type="number" id="edFs" min="30" max="250"></div>
+    </div>
+
+    <div class="ed-sec">
+      <h3>Checkout</h3>
+      <div class="ed-row"><label for="edPay">pay link</label><input type="text" id="edPay" placeholder="https://buy.stripe.com/…"></div>
+    </div>
+
+    <div class="ed-sec">
+      <h3>Look up an order</h3>
+      <p class="ed-hint">Paste the client reference ID from a Stripe order to see that plate.</p>
+      <input type="text" id="edCode" placeholder="1AbCdEf…">
+      <div id="edPv" class="co-preview" hidden></div>
+      <p class="ed-hint" id="edCodeOut"></p>
+    </div>
+
+    <div class="ed-sec">
+      <h3>Save</h3>
+      <p class="ed-hint">Changes stay in this browser. Copy them and send them over to bake them into the site for everyone.</p>
+      <div class="ed-screens"><button class="ed-btn primary" id="edCopy">copy changes</button><button class="ed-btn" id="edResetAll">reset everything</button></div>
+      <textarea id="edOut" readonly hidden></textarea>
+    </div>
+  </div>
+</aside>
+
+<script src="fruits.js"></script>
+<script>
+(() => {
+  /* ---------- settings ---------- */
+  const SHOW_EDIT_BUTTON = false;  // edit mode still opens at yoursite.com/#edit
+  const DEFAULT_FRUITS = (window.FRUITS || []).slice();
+  const STORE = "fp_edits_v1";
+  const DEFAULT_PAY = "https://buy.stripe.com/cNieVd9Gu7megh86m7fQI01";
+
+  const $ = s => document.querySelector(s);
+  const $$ = s => [...document.querySelectorAll(s)];
+  const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+
+  let S = { fruits: DEFAULT_FRUITS.slice(), cap: 12, fruitScale: 100, payUrl: "", ov: {} };
+  try { const raw = localStorage.getItem(STORE); if (raw) S = Object.assign(S, JSON.parse(raw)); } catch(e) {}
+  const save = () => { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch(e) {} };
+
+  const board = $("#board"), plate = $("#plate"), more = $("#more"), hint = $("#hint");
+  const basketWrap = $("#basketWrap"), basket = $("#basket"), heldEl = $("#held"), heldList = $("#heldList");
+  const fullEl = $("#full"), intro = $("#intro"), instr = $("#instructions"), checkout = $("#checkout");
+
+  /* ---------- editable defaults ---------- */
+  const DEF = {};
+  $$("[data-edit]").forEach(el => {
+    DEF[el.dataset.edit] = { text: el.dataset.kind === "box" ? null : el.textContent };
+  });
+  const esc = t => t.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  function renderText(el, text){
+    if (el.hasAttribute("data-tokens")) {
+      el.innerHTML = esc(text)
+        .replace(/\[more fruit\]/g, '<span class="pill">more fruit</span>')
+        .replace(/\[basket\]/g, '<span aria-hidden="true">🧺</span>');
+    } else el.textContent = text;
+  }
+  function applyEdit(id){
+    const el = document.querySelector(`[data-edit="${id}"]`); if (!el) return;
+    const o = S.ov[id] || {};
+    if (DEF[id].text !== null) renderText(el, o.text ?? DEF[id].text);
+    if (id === "plate") { layout(); return; }
+    el.style.setProperty("--k", (o.size ?? 100) / 100);
+    el.style.translate = (o.x || o.y) ? `${o.x||0}px ${o.y||0}px` : "";
+    if (id === "more") layout();
+  }
+  /* ---------- plate state ---------- */
+  let D = 400, cx = 0, cy = 0, zTop = 10, locked = false, drag = null;
+  let onBoard = [];   // {name, el, u, v, w, h, l, t}
+  let held = [];
+
+  const pool = () => { const used = new Set([...onBoard.map(f => f.name), ...held]); return S.fruits.filter(n => !used.has(n)); };
+
+  function makeFruit(name){
+    const el = document.createElement("div");
+    el.className = "fruit";
+    el.textContent = name;
+    const r = Math.round(Math.random()*10 - 5);
+    el.style.setProperty("--r", r + "deg");
+    el.style.zIndex = ++zTop;
+    board.appendChild(el);
+    const f = { name, el, u: 0, v: 0, r };
+    el.addEventListener("pointerdown", e => startDrag(e, f));
+    return f;
+  }
+  const measure = f => { f.w = f.el.offsetWidth; f.h = f.el.offsetHeight; };
+  function setPos(f, l, t){
+    l = clamp(l, 0, board.clientWidth - f.w);
+    t = clamp(t, 0, board.clientHeight - f.h);
+    f.l = l; f.t = t;
+    f.el.style.left = l + "px"; f.el.style.top = t + "px";
+  }
+  const place = f => setPos(f, cx + f.u*D - f.w/2, cy + f.v*D - f.h/2);
+  const syncUV = f => { f.u = (f.l + f.w/2 - cx) / D; f.v = (f.t + f.h/2 - cy) / D; };
+
+  function findSpot(f){
+    const R = D/2 - 6, pad = 6;
+    let best = null, bestScore = Infinity;
+    for (let i = 0; i < 600; i++){
+      const a = Math.random() * Math.PI * 2, r = R * Math.sqrt(Math.random());
+      const x = cx + Math.cos(a)*r, y = cy + Math.sin(a)*r;
+      const L = x - f.w/2, T = y - f.h/2, Rr = x + f.w/2, B = y + f.h/2;
+      let outside = 0;
+      for (const [px,py] of [[L,T],[Rr,T],[L,B],[Rr,B]]) outside += Math.max(0, Math.hypot(px-cx, py-cy) - R);
+      let overlap = 0;
+      for (const o of onBoard){
+        const ix = Math.min(Rr, o.l + o.w + pad) - Math.max(L, o.l - pad);
+        const iy = Math.min(B, o.t + o.h + pad) - Math.max(T, o.t - pad);
+        if (ix > 0 && iy > 0) overlap += ix*iy;
+      }
+      const score = overlap + outside * 400;
+      if (score < bestScore){ bestScore = score; best = {x,y}; if (score === 0) break; }
+    }
+    f.u = (best.x - cx) / D; f.v = (best.y - cy) / D;
+  }
+
+  function dispense(){
+    if (onBoard.length >= S.cap) { flashFull(); return; }
+    const p = pool(); if (!p.length) return;
+    const f = makeFruit(p[Math.floor(Math.random()*p.length)]);
+    measure(f); findSpot(f); place(f);
+    onBoard.push(f);
+    update();
+  }
+
+  function update(){
+    const full = onBoard.length >= S.cap;
+    more.disabled = full || !pool().length;
+    more.title = full ? "plate is full" : (!pool().length ? "that's every fruit" : "");
+    fullEl.hidden = !full;
+    heldEl.style.bottom = (basketWrap.offsetHeight * ((S.ov.basket?.size ?? 100)/100) + 22) + "px";
+  }
+  function flashFull(){
+    fullEl.hidden = false;
+    fullEl.classList.remove("shake"); void fullEl.offsetWidth; fullEl.classList.add("shake");
+  }
+
+  /* ---------- held fruits ---------- */
+  function renderHeld(){
+    heldList.innerHTML = "";
+    held.forEach(name => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "held-pill"; b.textContent = name;
+      b.addEventListener("pointerdown", e => pullFromHeld(e, name));
+      heldList.appendChild(b);
+    });
+    $("#heldEmpty").hidden = held.length > 0;
+  }
+  const openHeld = open => { heldEl.hidden = !open; update(); };
+  basket.addEventListener("click", () => { if (!locked) openHeld(heldEl.hidden); });
+  $("#heldClose").addEventListener("click", () => openHeld(false));
+
+  function inHold(x, y){
+    const rects = [basketWrap.getBoundingClientRect()];
+    if (!heldEl.hidden) rects.push(heldEl.getBoundingClientRect());
+    return rects.some(r => x >= r.left-8 && x <= r.right+8 && y >= r.top-8 && y <= r.bottom+8);
+  }
+
+  function pullFromHeld(e, name){
+    if (locked || e.button > 0) return;
+    e.preventDefault();
+    if (onBoard.length >= S.cap) { flashFull(); return; }
+    held = held.filter(n => n !== name); renderHeld();
+    const f = makeFruit(name); measure(f); onBoard.push(f);
+    const br = board.getBoundingClientRect();
+    setPos(f, e.clientX - br.left - f.w/2, e.clientY - br.top - f.h/2);
+    beginDrag(f, e, f.w/2, f.h/2);
+    update();
+  }
+
+  /* ---------- dragging ---------- */
+  function startDrag(e, f){
+    if (locked || e.button > 0) return;
+    e.preventDefault();
+    const br = board.getBoundingClientRect();
+    beginDrag(f, e, e.clientX - br.left - f.l, e.clientY - br.top - f.t);
+  }
+  function beginDrag(f, e, dx, dy){
+    drag = { f, dx, dy, id: e.pointerId };
+    f.el.classList.add("dragging");
+    f.el.style.zIndex = ++zTop;
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+  }
+  function onMove(e){
+    if (!drag || e.pointerId !== drag.id) return;
+    const br = board.getBoundingClientRect();
+    setPos(drag.f, e.clientX - br.left - drag.dx, e.clientY - br.top - drag.dy);
+    basket.classList.toggle("hot", inHold(e.clientX, e.clientY));
+  }
+  function onUp(e){
+    if (!drag || e.pointerId !== drag.id) return;
+    const f = drag.f; drag = null;
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", onUp);
+    window.removeEventListener("pointercancel", onUp);
+    basket.classList.remove("hot");
+    f.el.classList.remove("dragging");
+    if (e.type === "pointerup" && inHold(e.clientX, e.clientY)) {
+      f.el.remove();
+      onBoard = onBoard.filter(o => o !== f);
+      held.push(f.name); renderHeld(); openHeld(true);
+    } else syncUV(f);
+    update();
+  }
+
+  /* ---------- layout ---------- */
+  function layout(){
+    const bw = board.clientWidth;
+    const stacked = bw < 900, compact = bw < 640;
+    const po = S.ov.plate || {};
+    const pscale = (po.size ?? 100) / 100;
+    const moreTop = stacked ? 14 + hint.offsetHeight + 10 : 16;
+    const plateTop = moreTop + more.offsetHeight + 14;
+    let bh, d;
+    if (compact) {
+      d = Math.min(bw - 24, 560);
+      bh = plateTop + d + 20 + 96;
+    } else {
+      const top = board.getBoundingClientRect().top + window.scrollY;
+      bh = clamp(window.innerHeight - top - 76, 460, 900);
+      d = Math.min(bh - plateTop - 22, bw - (stacked ? 280 : 340), 980);
+    }
+    board.style.height = bh + "px";
+    D = Math.max(160, d * pscale);
+    cx = bw/2 + (po.x || 0);
+    cy = plateTop + d/2 + (po.y || 0);
+    Object.assign(plate.style, { width: D+"px", height: D+"px", left: (cx - D/2)+"px", top: (cy - D/2)+"px" });
+    more.style.top = moreTop + "px";
+    more.style.left = (bw/2 - more.offsetWidth/2) + "px";
+    const fs = clamp(D * (compact ? 0.08 : 0.064), 15, 62) * (S.fruitScale / 100);
+    board.style.setProperty("--fs", fs + "px");
+    onBoard.forEach(f => { measure(f); place(f); });
+    update();
+  }
+  window.addEventListener("resize", layout);
+
+  function startOver(){
+    onBoard.forEach(f => f.el.remove());
+    onBoard = []; held = []; renderHeld(); openHeld(false);
+    for (let i = 0; i < 3; i++) dispense();
+  }
+
+  /* ---------- screens ---------- */
+  function showInstructions(){ intro.hidden = true; instr.hidden = false; $("#arrange").focus({preventScroll:true}); }
+  function hideInstructions(){ instr.hidden = true; }
+  function playIntro(){
+    intro.hidden = false; instr.hidden = true;
+    const pill = intro.querySelector(".intro-pill");
+    pill.style.animation = "none"; void pill.offsetWidth; pill.style.animation = "";
+    setTimeout(() => { if (!intro.hidden) showInstructions(); }, 2000);
+  }
+  /* ---------- the order: one set of data drives the preview and the Stripe link ---------- */
+  // x, y = fruit centre relative to plate centre, in thousandths of the plate's width. r = degrees.
+  function captureOrder(){
+    const f = onBoard.slice()
+      .sort((a, b) => a.el.style.zIndex - b.el.style.zIndex)   // keep stacking order
+      .map(o => ({ n: o.name, x: Math.round(o.u*1000), y: Math.round(o.v*1000), r: o.r }));
+    return { v: 1, f };
+  }
+  // Packs the order into Stripe's client_reference_id (letters, numbers, - and _ only, 200 max).
+  // "1" + 7 characters per fruit: fruit number (2), x (2), y (2), rotation (1). 12 fruits = 85 characters.
+  const B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+  const e2 = n => B64[n >> 6] + B64[n & 63];
+  const d2 = s => B64.indexOf(s[0]) * 64 + B64.indexOf(s[1]);
+  function encodeOrder(order){
+    return "1" + order.f.map(o => {
+      const i = S.fruits.indexOf(o.n);
+      if (i < 0) return "";
+      return e2(i) + e2(clamp(o.x + 2048, 0, 4095)) + e2(clamp(o.y + 2048, 0, 4095)) + B64[clamp(o.r + 32, 0, 63)];
+    }).join("");
+  }
+  function decodeOrder(code){
+    code = (code || "").trim();
+    if (code[0] !== "1" || (code.length - 1) % 7 || /[^A-Za-z0-9_-]/.test(code)) return null;
+    const f = [];
+    for (let i = 1; i < code.length; i += 7){
+      const c = code.slice(i, i + 7);
+      f.push({ n: S.fruits[d2(c.slice(0,2))] ?? "unknown fruit", x: d2(c.slice(2,4)) - 2048, y: d2(c.slice(4,6)) - 2048, r: B64.indexOf(c[6]) - 32 });
+    }
+    return { v: 1, f };
+  }
+  // Static, read-only drawing of a plate from order data.
+  function renderPlate(box, order){
+    box.innerHTML = "";
+    const W = box.clientWidth, H = box.clientHeight;
+    const Dp = Math.min(W, H) * 0.88, pcx = W/2, pcy = H/2;
+    const pl = document.createElement("div");
+    pl.className = "pv-plate";
+    Object.assign(pl.style, { width: Dp+"px", height: Dp+"px", left: (pcx-Dp/2)+"px", top: (pcy-Dp/2)+"px" });
+    box.appendChild(pl);
+    const fsPlate = parseFloat(board.style.getPropertyValue("--fs")) / D || 0.064;
+    box.style.setProperty("--fs", (Dp * fsPlate) + "px");
+    order.f.forEach(o => {
+      const el = document.createElement("div");
+      el.className = "fruit pv-fruit";
+      el.textContent = o.n;
+      el.style.setProperty("--r", o.r + "deg");
+      el.style.left = (pcx + o.x/1000*Dp) + "px";
+      el.style.top = (pcy + o.y/1000*Dp) + "px";
+      box.appendChild(el);
+    });
+  }
+  const payBase = () => S.payUrl || DEFAULT_PAY;
+
+  function openCheckout(){
+    if (drag) onUp({ pointerId: drag.id, type: "pointercancel" });
+    locked = true; document.body.classList.add("locked");
+    openHeld(false);
+    const order = captureOrder();
+    const code = encodeOrder(order);
+    window.fruitPlateOrder = { order, json: JSON.stringify(order), code };
+    const base = payBase();
+    payLink.href = base + (base.includes("?") ? "&" : "?") + "client_reference_id=" + code;
+    checkout.hidden = false;
+    renderPlate($("#coPreview"), order);
+  }
+  function closeCheckout(){ locked = false; document.body.classList.remove("locked"); checkout.hidden = true; $("#coNote").hidden = true; }
+
+  more.addEventListener("click", () => { if (!editing) dispense(); });
+  $("#restart").addEventListener("click", () => { if (!editing) startOver(); });
+  $("#help").addEventListener("click", showInstructions);
+  $("#submit").addEventListener("click", () => { if (!editing) openCheckout(); });
+  $("#arrange").addEventListener("click", () => { if (!editing) hideInstructions(); });
+  $("#instrClose").addEventListener("click", hideInstructions);
+  $("#coBack").addEventListener("click", () => { if (!editing) closeCheckout(); });
+  checkout.addEventListener("click", e => { if (e.target === checkout && !editing) closeCheckout(); });
+  const payLink = $("#coPay");
+  const setPay = () => { if (checkout.hidden) payLink.href = payBase(); };
+  payLink.addEventListener("click", e => { if (!payBase()) { e.preventDefault(); $("#coNote").hidden = false; } });
+  document.addEventListener("keydown", e => {
+    if (e.key !== "Escape") return;
+    if (!checkout.hidden) closeCheckout(); else if (!instr.hidden) hideInstructions();
+  });
+
+  /* ---------- edit mode ---------- */
+  let editing = false, sel = null;
+  const editor = $("#editor"), pencil = $("#pencil");
+  pencil.hidden = !SHOW_EDIT_BUTTON;
+
+  function enterEdit(){ editing = true; document.body.classList.add("editing"); editor.hidden = false; pencil.hidden = true; fillGlobals(); showSel(); }
+  function exitEdit(){ editing = false; document.body.classList.remove("editing"); editor.hidden = true; pencil.hidden = !SHOW_EDIT_BUTTON; if (sel) sel.classList.remove("ed-sel"); sel = null; }
+  pencil.addEventListener("click", enterEdit);
+  $("#edDone").addEventListener("click", exitEdit);
+
+  document.addEventListener("click", e => {
+    if (!editing || editor.contains(e.target)) return;
+    const t = e.target.closest("[data-edit]");
+    if (!t) return;
+    e.preventDefault(); e.stopPropagation();
+    if (sel) sel.classList.remove("ed-sel");
+    sel = t; sel.classList.add("ed-sel");
+    showSel();
+  }, true);
+
+  const pairs = [["edSize","edSizeR","size",100],["edX","edXR","x",0],["edY","edYR","y",0]];
+  function showSel(){
+    $("#edNone").hidden = !!sel;
+    $("#edFields").hidden = !sel;
+    $("#edFields").style.display = sel ? "flex" : "none";
+    if (!sel) return;
+    const id = sel.dataset.edit, o = S.ov[id] || {};
+    $("#edName").textContent = id;
+    const isText = DEF[id].text !== null;
+    $("#edTextRow").hidden = !isText;
+    $("#edText").value = isText ? (o.text ?? DEF[id].text) : "";
+    $("#edTokHint").hidden = !sel.hasAttribute("data-tokens");
+    pairs.forEach(([n, r, key, d]) => { $("#"+n).value = $("#"+r).value = o[key] ?? d; });
+  }
+  function setOv(key, val){
+    const id = sel.dataset.edit;
+    S.ov[id] = Object.assign({}, S.ov[id], { [key]: val });
+    applyEdit(id); save();
+  }
+  $("#edText").addEventListener("input", e => sel && setOv("text", e.target.value));
+  pairs.forEach(([n, r, key]) => {
+    const a = $("#"+n), b = $("#"+r);
+    a.addEventListener("input", () => { if (!sel) return; b.value = a.value; setOv(key, Number(a.value) || 0); });
+    b.addEventListener("input", () => { if (!sel) return; a.value = b.value; setOv(key, Number(b.value)); });
+  });
+  $("#edReset").addEventListener("click", () => { if (!sel) return; const id = sel.dataset.edit; delete S.ov[id]; applyEdit(id); save(); showSel(); });
+
+  function fillGlobals(){
+    $("#edFruits").value = S.fruits.join("\n");
+    $("#edCap").value = S.cap; $("#edFs").value = S.fruitScale; $("#edPay").value = payBase();
+  }
+  $("#edFruits").addEventListener("change", e => {
+    const list = [...new Set(e.target.value.split(/[\n,]/).map(s => s.trim().toLowerCase()).filter(Boolean))];
+    if (list.length) { S.fruits = list; save(); startOver(); }
+  });
+  $("#edCap").addEventListener("input", e => { const v = parseInt(e.target.value, 10); if (v > 0) { S.cap = v; save(); update(); } });
+  $("#edFs").addEventListener("input", e => { const v = parseInt(e.target.value, 10); if (v > 0) { S.fruitScale = v; save(); layout(); } });
+  $("#edPay").addEventListener("input", e => { S.payUrl = e.target.value.trim(); save(); setPay(); });
+  $("#edCode").addEventListener("input", e => {
+    const order = decodeOrder(e.target.value), pv = $("#edPv"), out = $("#edCodeOut");
+    if (!order){ pv.hidden = true; out.textContent = e.target.value.trim() ? "That doesn't look like a fruit plate code." : ""; return; }
+    pv.hidden = false; renderPlate(pv, order);
+    out.textContent = order.f.map(o => `${o.n} (x ${o.x}, y ${o.y}, ${o.r}°)`).join(" · ");
+  });
+
+  $$("[data-screen]").forEach(b => b.addEventListener("click", () => {
+    const s = b.dataset.screen;
+    closeCheckout(); intro.hidden = true; instr.hidden = true;
+    if (s === "intro") { intro.hidden = false; const p = intro.querySelector(".intro-pill"); p.style.animation="none"; void p.offsetWidth; p.style.animation=""; }
+    if (s === "instructions") instr.hidden = false;
+    if (s === "checkout") openCheckout();
+  }));
+
+  $("#edCopy").addEventListener("click", () => {
+    const out = $("#edOut");
+    const json = JSON.stringify({ fruits: S.fruits, cap: S.cap, fruitScale: S.fruitScale, payUrl: S.payUrl, edits: S.ov }, null, 2);
+    out.value = json; out.hidden = false;
+    const btn = $("#edCopy");
+    const done = ok => { btn.textContent = ok ? "copied" : "select and copy below"; if (!ok) { out.focus(); out.select(); } setTimeout(() => btn.textContent = "copy changes", 1800); };
+    try { navigator.clipboard.writeText(json).then(() => done(true), () => done(false)); } catch(err) { done(false); }
+  });
+  $("#edResetAll").addEventListener("click", e => {
+    const b = e.currentTarget;
+    if (b.dataset.armed) {
+      S = { fruits: DEFAULT_FRUITS.slice(), cap: 12, fruitScale: 100, payUrl: "", ov: {} };
+      save(); Object.keys(DEF).forEach(applyEdit); setPay(); fillGlobals(); showSel(); startOver();
+      delete b.dataset.armed; b.textContent = "reset everything";
+    } else { b.dataset.armed = "1"; b.textContent = "tap again to reset"; setTimeout(() => { delete b.dataset.armed; b.textContent = "reset everything"; }, 2500); }
+  });
+
+  /* ---------- boot ---------- */
+  setPay();
+  renderHeld();
+  const boot = () => {
+    Object.keys(DEF).forEach(applyEdit);
+    layout();
+    startOver();
+    let seen = false;
+    try { seen = sessionStorage.getItem("fp_intro_seen") === "1"; sessionStorage.setItem("fp_intro_seen", "1"); } catch(e) {}
+    if (!seen) playIntro();
+    if (location.hash === "#edit") enterEdit();
+  };
+  window.addEventListener("hashchange", () => { if (location.hash === "#edit" && !editing) enterEdit(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(boot); else boot();
+})();
+</script>
+
+</body>
+</html>
