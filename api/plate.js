@@ -54,11 +54,27 @@ export default async function handler(request) {
     ...fruits,
   ]);
 
-  const options = { width: W, height: H, headers: { "Cache-Control": "public, max-age=31536000, immutable" } };
+  // Draw fully before answering, so a drawing error shows up as a readable message
+  // instead of a blank image.
+  const draw = async fonts => {
+    const res = new ImageResponse(tree, { width: W, height: H, ...(fonts ? { fonts } : {}) });
+    return res.arrayBuffer();
+  };
+  const errors = [];
+  let png = null;
   try {
     const text = [...new Set(order.f.map(o => o.n).join(""))].join("");
-    options.fonts = [{ name: "Inter", data: await loadInter(text || "a"), weight: 700, style: "normal" }];
-  } catch (e) { /* falls back to the built-in font */ }
-
-  return new ImageResponse(tree, options);
+    png = await draw([{ name: "Inter", data: await loadInter(text || "a"), weight: 700, style: "normal" }]);
+  } catch (e) { errors.push("with Inter: " + (e?.stack || e)); }
+  if (!png || !png.byteLength) {
+    try { png = await draw(null); } catch (e) { errors.push("built-in font: " + (e?.stack || e)); }
+  }
+  if (!png || !png.byteLength) {
+    return new Response("Couldn't draw the plate.\n\n" + errors.join("\n\n"), { status: 500, headers: { "Content-Type": "text/plain" } });
+  }
+  return new Response(png, { headers: {
+    "Content-Type": "image/png",
+    "Cache-Control": "public, max-age=31536000, immutable",
+    ...(errors.length ? { "X-Plate-Note": "drawn with the built-in font" } : {}),
+  } });
 }
