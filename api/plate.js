@@ -18,7 +18,11 @@ async function loadInter(text) {
   return (await fetch(url)).arrayBuffer();
 }
 
-const el = (type, style, children) => ({ type, props: { style, children } });
+// The image library needs display:flex on every box, so it is added to all of them here.
+const el = (type, style, children) => ({
+  type,
+  props: { style: { display: "flex", ...style }, ...(children === undefined ? {} : { children }) },
+});
 
 export default async function handler(request) {
   const code = new URL(request.url).searchParams.get("c");
@@ -34,23 +38,23 @@ export default async function handler(request) {
     return el("div", {
       position: "absolute", left: x - 450, top: y - 100, width: 900, height: 200,
       display: "flex", alignItems: "center", justifyContent: "center",
-    }, [
+    },
       el("div", {
-        display: "flex", background: "#fff", border: `2px solid ${COLORS.line}`,
+        background: "#fff", border: `2px solid ${COLORS.line}`,
         padding: `${Math.round(fs * 0.06)}px ${Math.round(fs * 0.26)}px ${Math.round(fs * 0.14)}px`,
         fontFamily: "Inter", fontWeight: 700, fontSize: fs, lineHeight: 1,
         letterSpacing: -fs * 0.03, color: COLORS.ink, transform: `rotate(${o.r}deg)`,
-      }, o.n),
-    ]);
+      }, String(o.n)),
+    );
   });
 
   const tree = el("div", {
-    width: "100%", height: "100%", display: "flex", position: "relative", background: COLORS.board,
+    width: "100%", height: "100%", position: "relative", background: COLORS.board,
   }, [
     el("div", {
       position: "absolute", left: cx - D / 2, top: cy - D / 2, width: D, height: D,
       borderRadius: 9999, background: COLORS.plate, border: `2px solid ${COLORS.line}`,
-    }, []),
+    }),
     ...fruits,
   ]);
 
