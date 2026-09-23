@@ -4,7 +4,7 @@
 // or deleting fruits would scramble the plates of past orders.
 // (Renaming a fruit's spelling is fine.)
 
-window.FRUITS = [
+const FRUITS = [
   "watermelon",
   "pear",
   "lemon",
@@ -32,3 +32,7 @@ window.FRUITS = [
   "cantaloupe",
   "persimmon"
 ];
+
+// shared by the site (browser) and the order email (server)
+if (typeof window !== "undefined") window.FRUITS = FRUITS;
+if (typeof module !== "undefined") module.exports = FRUITS;

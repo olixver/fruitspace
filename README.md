@@ -1,24 +1,24 @@
 # fruit plate.
 
-The fruit plate site. No Framer, no build step: just these files.
+- `index.html` is the whole site
+- `fruits.js` is the fruit list (only add new fruits to the END; orders store fruit by position)
+- `api/plate.js` draws a plate as a picture: `/api/plate?c=CODE`
+- `api/stripe-webhook.js` receives paid orders from Stripe and emails you
+- `api/order-preview.js` shows a sample order email: `/api/order-preview?c=CODE`
+- `api/_lib/` holds shared code (not public pages)
 
-- `index.html` is the whole site (layout, drag logic, checkout popup)
-- `fruits.js` is the fruit list (only add new fruits to the END)
+## Settings (Vercel → Project → Settings → Environment Variables)
 
-## Putting it online (Vercel)
+| name | value |
+|---|---|
+| `RESEND_API_KEY` | from resend.com → API Keys |
+| `STRIPE_WEBHOOK_SECRET` | from Stripe → the webhook you create (starts with `whsec_`) |
+| `ORDER_EMAIL_TO` | where order emails go (comma-separate for more than one) |
+| `ORDER_EMAIL_FROM` | optional, defaults to `fruit plate <orders@fruitplatefruitplate.com>` |
+| `SITE_URL` | optional, defaults to `https://fruitplatefruitplate.com` |
 
-1. Create a new repository on github.com (name it something like `fruitplate`).
-2. On the empty repo page, click "uploading an existing file" and drag in every file from this folder. Click "Commit changes".
-3. On vercel.com, click "Add New… → Project", pick the repo, and click Deploy. No settings needed.
-4. Check the `.vercel.app` address it gives you, then add your domain under Project → Settings → Domains.
-
-Any time a file changes on GitHub, Vercel republishes the site by itself.
+After changing settings, redeploy (Deployments → latest → Redeploy).
 
 ## Edit mode
 
-Go to `yourdomain.com/#edit` to open the edit panel (text, sizes, positions, fruit list, pay link, order lookup).
-Edits made there only save in your own browser. Use "copy changes" and send them to Claude to make them permanent.
-
-## Coming next
-
-The order email (a Stripe webhook plus a plate image) gets added in an `api/` folder in this same repo.
+`fruitplatefruitplate.com/#edit`. Edits save only in your browser; "copy changes" and send them to Claude to make them permanent.
