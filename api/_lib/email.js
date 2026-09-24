@@ -77,6 +77,7 @@ export const CUSTOMER_COPY = {
   shipping: "the painting of your plate is headed to:",
   signoff: "questions? just reply to this email.",
   signature: "fruit plate fruit plate",
+  link: "fruitplatefruitplate.com",
 };
 
 export function buildCustomerEmail(session, siteUrl) {
@@ -108,7 +109,7 @@ export function buildCustomerEmail(session, siteUrl) {
       <div>${esc(fill(CUSTOMER_COPY.shipping))}</div>
       ${[ship?.name, ...addr].filter(Boolean).map(esc).join("<br>")}
     </td></tr>` : ""}
-    <tr><td style="padding:18px 24px 24px;font-size:14px;line-height:1.5;color:#121112">${esc(fill(CUSTOMER_COPY.signoff))}<br>${esc(fill(CUSTOMER_COPY.signature))}</td></tr>
+    <tr><td style="padding:18px 24px 24px;font-size:14px;line-height:1.5;color:#121112">${esc(fill(CUSTOMER_COPY.signoff))}<br>${esc(fill(CUSTOMER_COPY.signature))}<br><br><a href="https://www.fruitplatefruitplate.com" style="color:#121112;text-decoration:underline">${esc(CUSTOMER_COPY.link)}</a></td></tr>
   </table></td></tr></table></body></html>`;
 
   const text = [
@@ -118,6 +119,7 @@ export function buildCustomerEmail(session, siteUrl) {
     fruitSentence ? fruitSentence : "",
     addr.length ? `${fill(CUSTOMER_COPY.shipping)}\n${[ship?.name, ...addr].filter(Boolean).join("\n")}` : "",
     `${fill(CUSTOMER_COPY.signoff)}\n${fill(CUSTOMER_COPY.signature)}`,
+    "https://www.fruitplatefruitplate.com",
   ].filter(Boolean).join("\n\n");
 
   return { subject: fill(CUSTOMER_COPY.subject), html, text, to: cust.email || null };
