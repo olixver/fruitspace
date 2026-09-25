@@ -101,8 +101,6 @@
   .screen{position:fixed;inset:0;display:grid;place-items:center;padding:16px;z-index:7000}
   #intro{background:var(--ground);z-index:8000}
   #pillBeat{background:var(--ground);z-index:8000}
-  .intro-stack{display:flex;flex-direction:column;align-items:center;gap:clamp(22px,4vw,36px);text-align:center}
-  .intro-line{margin:0;font-family:var(--body);font-weight:600;font-size:calc(clamp(20px,3.4vw,32px) * var(--k,1));letter-spacing:-.01em;max-width:20ch;text-wrap:balance}
   .intro-pill{font-family:var(--display);font-weight:800;font-variation-settings:"opsz" 96;font-size:calc(clamp(44px,9vw,104px) * var(--k,1));letter-spacing:-.07em;line-height:1;padding:.3em .55em .4em;background:#FFF8FB;border:1px solid var(--line);border-radius:999px;white-space:nowrap}
   .intro-pill.pulse{animation:pulse 1s ease-in-out infinite}
   @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
@@ -204,10 +202,7 @@ tap [basket] to bring them back</p>
 </div>
 
 <div id="pillBeat" class="screen" hidden>
-  <div class="intro-stack">
-    <div class="intro-pill" data-edit="introLogo">fruit plate.</div>
-    <p class="intro-line" data-edit="introLine">would you like an artist to paint these fruits?</p>
-  </div>
+  <div class="intro-pill" data-edit="introLogo">fruit plate.</div>
 </div>
 
 <div id="checkout" class="screen" hidden role="dialog" aria-label="Get a painting">
@@ -298,7 +293,7 @@ u don’t know.</p>
   const DEFAULT_FRUITS = (window.FRUITS || []).slice();
   const STORE = "fp_edits_v1";
   const DEFAULT_PAY = "https://buy.stripe.com/cNieVd9Gu7megh86m7fQI01";
-  const INTRO_MS = 3000;       // how long the pill logo intro shows
+  const INTRO_MS = 2500;       // how long the pill logo intro shows
   const TIP_DELAY_MS = 4500;   // after the plate appears, wait this long, then the speech bubble pops out of the ?
 
   const $ = s => document.querySelector(s);
